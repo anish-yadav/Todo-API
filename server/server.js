@@ -1,0 +1,65 @@
+var express = require('express');
+var bodyParser = require('body-parser');
+var {ObjectId} = require('mongodb');
+
+var {mongoose} = require('./db/mongoose.js');
+var {Todo} = require('./models/todo.js');
+var {User} = require('./models/user.js')
+
+
+var app = express();
+var port = process.env.PORT || 3000;
+
+app.use(bodyParser.json());
+
+//POST Todos
+app.post('/todos',(req,res) =>{
+        var todo = new Todo ({
+          text : req.body.text
+        });
+
+        todo.save().then((docs) =>{
+         res.send(docs);
+        },(err)=>{
+          res.status(400).send(err);
+        });
+});
+
+//GET all todos
+app.get('/todos',(req,res)=>{
+      Todo.find().then((todos)=>{
+        res.send({todos});
+      },(e)=>res.status(400).send(e));
+});
+
+
+
+//GET todo by id
+app.get('/todos/:id',(req,res)=>{
+   
+      var id = req.params.id;
+
+      if (!ObjectId.isValid(id)) {
+         return res.status(404).send();
+      }
+       
+      Todo.findById(id).then((todo)=>{
+        if(!todo){
+          return res.status(404).send();
+        }
+        res.status(200).send(todo);
+      });
+
+
+});
+
+
+
+
+app.listen(port, () => {
+  console.log(`API Started up at port ${port}` );
+});
+
+
+module.exports = {app};
+
