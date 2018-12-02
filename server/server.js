@@ -1,6 +1,7 @@
-var express = require('express');
-var bodyParser = require('body-parser');
-var {ObjectId} = require('mongodb');
+const _ = require('lodash');
+const express = require('express');
+const bodyParser = require('body-parser');
+const {ObjectID} = require('mongodb');
 
 var {mongoose} = require('./db/mongoose.js');
 var {Todo} = require('./models/todo.js');
@@ -15,8 +16,7 @@ app.use(bodyParser.json());
 //POST Todos
 app.post('/todos',(req,res) =>{
         var todo = new Todo ({
-          text : req.body.text,
-          completed : req.body.completed
+          text : req.body.text
         });
 
         todo.save().then((docs) =>{
@@ -40,7 +40,7 @@ app.get('/todos/:id',(req,res)=>{
    
       var id = req.params.id;
 
-      if (!ObjectId.isValid(id)) {
+      if (!ObjectID.isValid(id)) {
          return res.status(404).send();
       }
        
@@ -53,6 +53,56 @@ app.get('/todos/:id',(req,res)=>{
 
 
 });
+
+//DELETE todos 
+app.delete('/todos/:id',(req,res)=>{
+ var id = req.params.id;
+
+ if(!ObjectID.isValid(id)){
+  return res.status(404).send();
+ }
+
+ Todo.findByIdAndRemove(id).then((todo)=>{
+ if(!todo){
+  return res.status(404).send();
+ }
+ return res.status(200).send({todo});
+ }).catch((e)=>{
+  res.status(400).send(e);
+ });
+
+
+});
+
+
+// PATCH Todos
+app.patch('/todos/:id',(req,res)=>{
+      var id = req.params.id;
+      var body = _.pick(req.body,['text','completed']);
+
+      if(!ObjectID.isValid(id)){
+       return res.status(404).send();
+      }
+
+      if (_.isBoolean(body.completed) && body.completed) {
+        body.completedAt = new Date().getTime();
+      } else {
+       body.completed = false;
+       body.completedAt = null;
+      }
+
+      Todo.findByIdAndUpdate(id,{$set:body},{new:true}).then((todo)=>{
+        if(!todo){
+          return res.status(404).send()
+        }
+       return res.status(200).send({todo});
+      }).catch((e)=>{
+        return res.status(400).send(e);
+      });
+
+
+});
+
 
 
 
